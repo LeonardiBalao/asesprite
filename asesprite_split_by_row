@@ -1,0 +1,62 @@
+-- MATHEUS BALÃO
+-- USE IT the way you want
+
+-- Script to split a PNG into 8 equal-height parts in Aseprite with custom folder and directional filenames
+local sprite = app.activeSprite
+if not sprite then
+    app.alert("No active sprite found. Please open a PNG file in Aseprite.")
+    return
+end
+
+-- Get sprite dimensions and filename
+local width = sprite.width
+local height = sprite.height
+local sliceHeight = math.floor(height / 8)
+local filename = app.fs.fileName(sprite.filename):gsub("%..-$", "") -- Remove extension
+
+-- Check if height is divisible by 8
+if height < 8 then
+    app.alert("Sprite height is too small to split into 8 parts.")
+    return
+end
+
+-- Create output directory named after the filename
+local outputDir = app.fs.filePath(sprite.filename) .. "/" .. filename .. "/"
+app.fs.makeAllDirectories(outputDir)
+
+-- Directional suffixes for the 8 slices
+local directions = {
+    "right",
+    "bottomRight",
+    "bottom",
+    "bottomLeft",
+    "left",
+    "topLeft",
+    "top",
+    "topRight"
+}
+
+-- Loop through 8 sections
+for i = 0, 7 do
+    -- Create a new sprite for each slice
+    local newSprite = Sprite(width, sliceHeight)
+    local newCel = newSprite.cels[1]
+    
+    -- Copy pixels from the original sprite
+    local yOffset = i * sliceHeight
+    for x = 0, width - 1 do
+        for y = 0, sliceHeight - 1 do
+            local pixel = sprite.cels[1].image:getPixel(x, y + yOffset)
+            newCel.image:putPixel(x, y, pixel)
+        end
+    end
+    
+    -- Save the new sprite with filename + direction
+    local outputPath = outputDir .. filename .. "_" .. directions[i + 1] .. ".png"
+    newSprite:saveAs(outputPath)
+    
+    -- Close the new sprite to free memory
+    newSprite:close()
+end
+
+app.alert("Successfully split the image into 8 parts. Files saved in: " .. outputDir)
